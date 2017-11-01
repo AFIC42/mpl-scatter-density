@@ -74,8 +74,9 @@ class ScatterDensityArtist(AxesImage):
         self._density_vmax = np.nanmax
 
         self._ax = ax
-        self._ax.figure.canvas.mpl_connect('button_press_event', self.downres)
-        self._ax.figure.canvas.mpl_connect('button_release_event', self.upres)
+        self._ax.figure.canvas.mpl_connect('button_press_event', self._pan_downres)
+        self._ax.figure.canvas.mpl_connect('button_release_event', self._pan_upres)
+        self._ax.figure.canvas.mpl_connect('resize_event', self._resize)
 
         if downres_factor < 1 or downres_factor % 1 != 0:
             raise ValueError('downres_factor should be a strictly positive integer value')
@@ -96,6 +97,14 @@ class ScatterDensityArtist(AxesImage):
 
         if vmin is not None or vmax is not None:
             self.set_clim(vmin, vmax)
+
+        self.timer = self._ax.figure.canvas.new_timer(interval=500)
+        self.timer.single_shot = True
+        self.timer.add_callback(self._upres_and_draw)
+
+    def _resize(self, event):
+        self.downres()
+        self.timer.start()
 
     def set_color(self, color):
         if color is not None:
@@ -135,23 +144,40 @@ class ScatterDensityArtist(AxesImage):
             self._y_log = np.log10(self._y)
         self._y_log_sub = self._y_log[::step]
 
-    def downres(self, event=None):
-        if self._downres_factor == 1:
-            return
+    @property
+    def _is_pan_active(self):
         try:
             mode = self._ax.figure.canvas.toolbar.mode
         except AttributeError:  # pragma: nocover
-            return
+            return False
         if mode != 'pan/zoom':
+            return False
+        return True
+
+    def _pan_downres(self, event):
+        if self._is_pan_active:
+            self.downres()
+
+    def _pan_upres(self, event):
+        if self._is_pan_active:
+            self.upres()
+
+    def downres(self):
+        if self._downres_factor == 1 or self._downres:
             return
         self._downres = True
         self.stale = True
 
     def upres(self, event=None):
-        if self._downres_factor == 1:
+        if self._downres_factor == 1 or not self._downres:
             return
         self._downres = False
         self.stale = True
+
+    def _upres_and_draw(self):
+        self.upres()
+        # TODO: avoid drawing for each artist
+        self._ax.figure.canvas.draw()
 
     def get_extent(self):
         xmin, xmax = self.axes.get_xlim()

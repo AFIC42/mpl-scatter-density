@@ -1,7 +1,7 @@
 0.4 (unreleased)
 ----------------
 
-- No changes yet.
+- Downsample when resizing interactive window. [#14]
 
 0.3 (2017-10-29)
 ----------------
