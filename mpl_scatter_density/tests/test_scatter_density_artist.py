@@ -88,8 +88,6 @@ class TestScatterDensity(object):
     def test_downres(self, log):
         a = ScatterDensityArtist(self.ax, self.x1, self.y1, downres_factor=10)
         self.ax.add_artist(a)
-        self.ax.figure.canvas.toolbar = MagicMock()
-        self.ax.figure.canvas.toolbar.mode = 'pan/zoom'
         a.downres()
         self.ax.set_xlim(0.1, 3.)
         self.ax.set_ylim(0.1, 3.)
@@ -132,8 +130,6 @@ class TestScatterDensity(object):
         self.ax.add_artist(a)
         self.ax.set_xlim(-5, 8)
         self.ax.set_ylim(-6.5, 6.5)
-        self.ax.figure.canvas.toolbar = MagicMock()
-        self.ax.figure.canvas.toolbar.mode = 'pan/zoom'
         a.downres()
         return self.fig
 
@@ -194,8 +190,6 @@ class TestScatterDensity(object):
 
         a = ScatterDensityArtist(self.ax, self.x1, self.y1, downres_factor=10)
         self.ax.add_artist(a)
-        self.ax.figure.canvas.toolbar = MagicMock()
-        self.ax.figure.canvas.toolbar.mode = 'pan/zoom'
         # We can't just draw, we need to save, as not all backends actually
         # draw when calling figure.canvas.draw()
         self.ax.figure.savefig(tmpdir.join('test1.png').strpath)
@@ -205,8 +199,6 @@ class TestScatterDensity(object):
 
         a = ScatterDensityArtist(self.ax, self.x1, self.y1, downres_factor=1)
         self.ax.add_artist(a)
-        self.ax.figure.canvas.toolbar = MagicMock()
-        self.ax.figure.canvas.toolbar.mode = 'pan/zoom'
         # We can't just draw, we need to save, as not all backends actually
         # draw when calling figure.canvas.draw()
         self.ax.figure.savefig(tmpdir.join('test2.png').strpath)
@@ -238,5 +230,9 @@ class TestScatterDensity(object):
         # draw when calling figure.canvas.draw()
         self.ax.figure.savefig(tmpdir.join('test.png').strpath)
         assert not a.stale
-        a.downres()
+        a._pan_downres(None)
         assert not a.stale
+        self.ax.figure.canvas.toolbar.mode = 'pan/zoom'
+        assert not a.stale
+        a._pan_downres(None)
+        assert a.stale
